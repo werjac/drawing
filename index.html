@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="canvas.js"></script>
+    <script src="http://cdn.peerjs.com/0.3/peer.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.js"></script>
+</head>
+<body>
+    <div id="canvasSimpleDiv">
+        <canvas width="490" height="220" id="canvas" style="border:1px solid #000000;">></canvas>
+    </div>
+    <form>
+        <select id="selectColor" style="background:#000000" >
+            <option value="0" style="background:#000000">Black</option>
+            <option value="1" style="background:#ff0000">Red</option>
+            <option value="2" style="background:#009933">Green</option>
+            <option value="3" style="background:#0099ff">Blue</option>
+            <option value="4" style="background:#fffe11">Yellow</option>
+        </select>
+        <input type="button" onclick="changeColor()" value="Change Color">
+    </form>
+    <input id="clearCanvas" type="button" value="Clear">
+    <p id="pid">Your id: </p>
+
+    <form>
+        Destination ID: <input type="text" id="getId">
+        <input type="button" onclick="addId()" value="Add">
+    </form>
+
+    <p>List ID:
+        <ul id="listId" style="list-style-type:square">
+        </ul>
+    </p>
+    <script type="text/javascript"> $(document).ready(function() {prepareSimpleCanvas();});</script>
+    <script type="text/javascript"> $(document).ready(function() {preparePeerJS();});</script>
+</body>
+</html>
