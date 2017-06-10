@@ -108,11 +108,12 @@ function preparePeerJS(){
                     addClick2(json.x, json.y, json.dragging, json.color);
                     redraw();
                 }
-                else if(json.msg ==0 ){
+                else if(json.msg == 0 ){
                     confirmationId(json.id);
                 }
                 else if(json.msg == 1){
                     addUser(json.id);
+
                 }
                 //$('#receive').append(data);
             });
@@ -123,76 +124,55 @@ function confirmationId(id){
     var conf = confirm("Do you want to add user: " + id + " to the session?");
     if(conf == true){
         addUser(id);
-        var confirmation ={"msg":1, "id": peer.id};
-        var json = JSON.stringify(confirmation);
-
-        if (peerCon[peerCon.length-1] != null) {
-            peerCon[peerCon.length-1].send(json);
-        }
-        else {
-            peerCon[peerCon.length-1] = peer.connect(listId[peerCon.length-1]);
-            peerCon[peerCon.length-1].on('open', function () {
-                peerCon[peerCon.length-1].send(json);
-            });
-        }
-
+        var peerTemp=null;
+        sendJson(peerTemp, JSON.stringify( {"msg":1, "id": peer.id}), id);
     }
     else{
         console.log("Abend");
     }
-
+}
+function sendJson(peerCon, json, id){
+    if(peerCon != null){
+        peerCon.send(json);
+    }
+    else{
+        peerCon = peer.connect(id);
+        peerCon.on('open', function () {
+            peerCon.send(json);
+        });
+    }
 }
 function sendPoint(X,Y,dragging) {
-    var coordinate = {"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor};
-    var json = JSON.stringify(coordinate);
     for (i = 0; i < listId.length; i++) {
         if (peerCon[i] != null) {
-            peerCon[i].send(json);
+            peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor}));
         }
         else {
             peerCon[i] = peer.connect(listId[i]);
             peerCon[i].on('open', function () {
-                peerCon[i].send(json);
+                peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor}));
             });
         }
     }
-    /*if (cPeer != null) {
-        cPeer.send(json);
-
-    } else {
-        cPeer = peer.connect(listId[0]);
-        cPeer.on('open', function () {
-            cPeer.send(json);
-        });
-    }*/
 }
 
 function changeColor(){
-    var color = document.getElementById("selectColor");
-    currentColor = colors[color.value];
+    currentColor = colors[document.getElementById("selectColor").value];
     document.getElementById("selectColor").setAttribute("style","background:"+currentColor);
 
 }
 function addUser(id){
     listId.push(id);
-    document.getElementById("getId").value='';
-    peerCon[listId.length-1]=null;
+    var peerTemp = peer.connect(listId[listId.length-1]);
+    peerCon.push(peerTemp);
     var node = document.createElement("li");
     var textnode = document.createTextNode(listId[listId.length-1]);
-    node.appendChild(textnode);
-    document.getElementById("listId").appendChild(node);
+    document.getElementById("listId").appendChild(node.appendChild(textnode));
 }
 function addId(){
-    id=document.getElementById("getId").value;
-
-    idQuestion = {"msg" : 0, "id": peer.id};
-    var json = JSON.stringify(idQuestion);
-
-    peerTemp = peer.connect(id);
-    peerTemp.on('open',function () {
-        peerTemp.send(json);
-    });
-
+    var peerTemp = null;
+    sendJson( peerTemp, JSON.stringify({"msg" : 0, "id": peer.id}), document.getElementById("getId").value);
+    document.getElementById("getId").value='';
 }
 
 function send(){
