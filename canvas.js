@@ -44,11 +44,10 @@ function prepareSimpleCanvas()
     });
     $('#clearCanvas').mousedown(function(e)
     {
-        clickX = new Array();
-        clickY = new Array();
-        clickDrag = new Array();
-        clickColor = new Array();
-        clearCanvas();
+        resetCanvas();
+        for(var i=0; i<listId.length;i++){
+            sendJson(peerCon[i],JSON.stringify({"msg":6}),listId[i]);
+        }
     });
 }
 
@@ -73,6 +72,15 @@ function clearCanvas()
     context.clearRect(0, 0, canvasWidth, canvasHeight);
 }
 
+function resetCanvas()
+{
+    clickX = new Array();
+    clickY = new Array();
+    clickDrag = new Array();
+    clickColor = new Array();
+    clearCanvas();
+}
+
 function redraw()
 {
     clearCanvas();
@@ -94,7 +102,6 @@ function redraw()
         context.stroke();
     }
 }
-
 
 function preparePeerJS(){
     if (peer == null) peer = new Peer({ key: 'lwjd5qra8257b9', debug: 3});
@@ -121,11 +128,26 @@ function preparePeerJS(){
                         redraw();
                     }
                 }
-                //$('#receive').append(data);
+                else if(json.msg==4){
+                    confirmationSession(json.id);
+                }
+                else if(json.msg==5){
+                    var id=json.id;
+                    addUser(id);
+                    sendAllPoints(id);
+                    for( var i=0; i<listId.length-1; i++){
+                        if(id!=listId[i]){
+                            sendJson(peerTemp,JSON.stringify( {"msg":1, "id": id}), listId[i]);
+                            sendJson(peerTemp,JSON.stringify( {"msg":1, "id": listId[i]}),id);
+                        }
+                    }
+                }
+                else if(json.msg==6) resetCanvas();
             });
         });
     });
 }
+
 function confirmationId(id){
     var conf = confirm("Do you want to add user: " + id + " to the session?");
     if(conf == true){
@@ -144,6 +166,17 @@ function confirmationId(id){
         console.log("Abend");
     }
 }
+
+function confirmationSession(id){
+    var conf = confirm("Do you want to join to session of user: " + id + " ?");
+    if(conf==true){
+        addUser(id);
+        peerTemp=null;
+        sendJson(peerTemp,  JSON.stringify( {"msg":5, "id": peer.id}), id);
+        resetCanvas();
+    }
+}
+
 function sendJson(peerCon, json, id){
     if(peerCon != null){
         peerCon.send(json);
@@ -155,6 +188,7 @@ function sendJson(peerCon, json, id){
         });
     }
 }
+
 function sendPoint(X,Y,dragging) {
     for (i = 0; i < listId.length; i++) {
         if (peerCon[i] != null) {
@@ -168,6 +202,7 @@ function sendPoint(X,Y,dragging) {
         }
     }
 }
+
 function sendAllPoints(id){
     var points = {"msg": 3, "x": clickX, "y": clickY, "dragging": clickDrag,"color": clickColor };
     peerTemp = null;
@@ -179,6 +214,7 @@ function changeColor(){
     document.getElementById("selectColor").setAttribute("style","background:"+currentColor);
 
 }
+
 function addUser(id){
     listId.push(id);
     peerTemp = peer.connect(listId[listId.length-1]);
@@ -188,16 +224,25 @@ function addUser(id){
     node.appendChild(textnode)
     document.getElementById("listId").appendChild(node);
 }
+
 function joinToOther(){
-    peerTemp = null;
-    sendJson( peerTemp, JSON.stringify({"msg" : 0, "id": peer.id}), document.getElementById("otherId").value);
-    document.getElementById("otherId").value='';
+    var joinId = document.getElementById("otherId").value
+    if(joinId!=''){
+        peerTemp = null;
+        sendJson( peerTemp, JSON.stringify({"msg" : 0, "id": peer.id}), document.getElementById("otherId").value);
+        document.getElementById("otherId").value='';
+        resetCanvas();
+    }
+    else{
+        window.alert("The Id field cannot be empty.");
+    }
 }
 
-function send(){
-    dId=document.getElementById("setId").value;
-    c = peer.connect(dId);
-    c.on('open', function() {
-        c.send(document.getElementById("message").value);
-    });
+function addOtherUser(){
+    var userId = document.getElementById("userId").value;
+    if(userId!=''){
+        peerTemp=null;
+        sendJson(peerTemp, JSON.stringify({"msg" : 4, "id": peer.id}), userId);
+        document.getElementById("userId").value='';
+    }
 }
