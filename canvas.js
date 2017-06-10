@@ -5,6 +5,7 @@ var clickColor = new Array();
 var listId = new Array();
 var peerCon= new Array();
 var peer = null;
+var peerTemp=null;
 var paint;
 var context;
 var canvasWidth = 490;
@@ -113,7 +114,12 @@ function preparePeerJS(){
                 }
                 else if(json.msg == 1){
                     addUser(json.id);
-
+                }
+                else if(json.msg ==3) {
+                    for(var i=0; i<json.x.length; i++){
+                        addClick2(json.x[i],json.y[i],json.dragging[i],json.color[i]);
+                        redraw();
+                    }
                 }
                 //$('#receive').append(data);
             });
@@ -124,8 +130,15 @@ function confirmationId(id){
     var conf = confirm("Do you want to add user: " + id + " to the session?");
     if(conf == true){
         addUser(id);
-        var peerTemp=null;
+        peerTemp=null;
         sendJson(peerTemp, JSON.stringify( {"msg":1, "id": peer.id}), id);
+        for( var i=0; i<listId.length; i++){
+            if(id!=listId[i]){
+                sendJson(peerTemp,JSON.stringify( {"msg":1, "id": id}), listId[i]);
+                sendJson(peerTemp,JSON.stringify( {"msg":1, "id": listId[i]}),id);
+            }
+        }
+        sendAllPoints(id);
     }
     else{
         console.log("Abend");
@@ -155,6 +168,11 @@ function sendPoint(X,Y,dragging) {
         }
     }
 }
+function sendAllPoints(id){
+    var points = {"msg": 3, "x": clickX, "y": clickY, "dragging": clickDrag,"color": clickColor };
+    peerTemp = null;
+    sendJson(peerTemp, JSON.stringify(points),id);
+}
 
 function changeColor(){
     currentColor = colors[document.getElementById("selectColor").value];
@@ -163,16 +181,17 @@ function changeColor(){
 }
 function addUser(id){
     listId.push(id);
-    var peerTemp = peer.connect(listId[listId.length-1]);
+    peerTemp = peer.connect(listId[listId.length-1]);
     peerCon.push(peerTemp);
     var node = document.createElement("li");
     var textnode = document.createTextNode(listId[listId.length-1]);
-    document.getElementById("listId").appendChild(node.appendChild(textnode));
+    node.appendChild(textnode)
+    document.getElementById("listId").appendChild(node);
 }
-function addId(){
-    var peerTemp = null;
-    sendJson( peerTemp, JSON.stringify({"msg" : 0, "id": peer.id}), document.getElementById("getId").value);
-    document.getElementById("getId").value='';
+function joinToOther(){
+    peerTemp = null;
+    sendJson( peerTemp, JSON.stringify({"msg" : 0, "id": peer.id}), document.getElementById("otherId").value);
+    document.getElementById("otherId").value='';
 }
 
 function send(){

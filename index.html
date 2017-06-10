@@ -25,8 +25,12 @@
     <p id="pid">Your ID: </p>
 
     <form>
-        Destination ID: <input type="text" id="getId">
-        <input type="button" onclick="addId()" value="Add">
+        Add user to session: <input type="text" id="getId">
+        <input type="button" onclick="joinToOther()" value="Add">
+    </form>
+    <form>
+        End session and join to other: <input type="text" id="otherId">
+        <input type="button" onclick="joinToOther()" value="End and Join">
     </form>
 
     <p>List ID:
