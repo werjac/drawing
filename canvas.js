@@ -228,21 +228,32 @@ function addUser(id){
 function joinToOther(){
     var joinId = document.getElementById("otherId").value
     if(joinId!=''){
-        peerTemp = null;
-        sendJson( peerTemp, JSON.stringify({"msg" : 0, "id": peer.id}), document.getElementById("otherId").value);
-        document.getElementById("otherId").value='';
-        resetCanvas();
+        if(idIsOnList(joinId)==false){
+            peerTemp = null;
+            sendJson( peerTemp, JSON.stringify({"msg" : 0, "id": peer.id}), document.getElementById("otherId").value);
+            resetCanvas();
+        }
+        else window.alert("You have already joined this session");
     }
-    else{
-        window.alert("The Id field cannot be empty.");
-    }
-}
+    else window.alert("The ID field cannot be empty.");
+    document.getElementById("otherId").value='';
 
+}
+function idIsOnList(id){
+    for(var i=0; i<listId.length;i++){
+        if (id == listId[i]) return true;
+    }
+    return false;
+}
 function addOtherUser(){
     var userId = document.getElementById("userId").value;
     if(userId!=''){
-        peerTemp=null;
-        sendJson(peerTemp, JSON.stringify({"msg" : 4, "id": peer.id}), userId);
-        document.getElementById("userId").value='';
+        if(idIsOnList(userId)==false){
+            peerTemp=null;
+            sendJson(peerTemp, JSON.stringify({"msg" : 4, "id": peer.id}), userId);
+        }
+        else window.alert("This ID is already on the list.");
     }
+    else window.alert("The ID field cannot be empty.");
+    document.getElementById("userId").value='';
 }
