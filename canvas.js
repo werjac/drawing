@@ -1,11 +1,8 @@
-var clickX = new Array();
-var clickY = new Array();
-var clickDrag = new Array();
-var clickColor = new Array();
 var listId = new Array();
 var peerCon= new Array();
+var arrayTrace = new Array();
 var peer = null;
-var peerTemp=null;
+var peerTemp = null;
 var paint;
 var context;
 var canvasWidth = 490;
@@ -13,9 +10,18 @@ var canvasHeight = 220;
 var colors = ["#000000", "#ff0000", "#009933", "#0099ff", "#fffe11"];
 var currentColor = "#000000";
 
+function Trace(id){
+    this.id=id;
+    this.clickX = new Array();
+    this.clickY = new Array();
+    this.clickDrag = new Array();
+    this.clickColor = new Array();
+}
 
 function prepareSimpleCanvas()
 {
+    var trace = new Trace(0);
+    arrayTrace.push(trace);
     context = document.getElementById('canvas').getContext("2d");
     $('#canvas').mousedown(function(e)
     {
@@ -53,18 +59,21 @@ function prepareSimpleCanvas()
 
 function addClick(x, y, dragging)
 {
-    clickX.push(x);
-    clickY.push(y);
-    clickColor.push(currentColor);
-    clickDrag.push(dragging);
+    arrayTrace[0].clickX.push(x);
+    arrayTrace[0].clickY.push(y);
+    arrayTrace[0].clickColor.push(currentColor);
+    arrayTrace[0].clickDrag.push(dragging);
 }
 
-function addClick2(x, y, dragging, color)
+function addClick2(x, y, dragging, color,id)
 {
-    clickX.push(x);
-    clickY.push(y);
-    clickColor.push(color);
-    clickDrag.push(dragging);
+    var i=0;
+    do{i++;}
+    while(id!= arrayTrace[i].id)
+    arrayTrace[i].clickX.push(x);
+    arrayTrace[i].clickY.push(y);
+    arrayTrace[i].clickColor.push(color);
+    arrayTrace[i].clickDrag.push(dragging);
 }
 
 function clearCanvas()
@@ -74,10 +83,22 @@ function clearCanvas()
 
 function resetCanvas()
 {
-    clickX = new Array();
-    clickY = new Array();
-    clickDrag = new Array();
-    clickColor = new Array();
+    for(var i=0; i<arrayTrace.length;i++){
+        arrayTrace[i].clickX=new Array();
+        arrayTrace[i].clickY=new Array();
+        arrayTrace[i].clickColor=new Array();
+        arrayTrace[i].clickDrag=new Array();
+    }
+    clearCanvas();
+}
+function clearSession(){
+    for(var i=1; i<arrayTrace.length;i++){
+        arrayTrace.pop();
+    }
+    arrayTrace[0].clickX=new Array();
+    arrayTrace[0].clickY=new Array();
+    arrayTrace[0].clickColor=new Array();
+    arrayTrace[0].clickDrag=new Array();
     clearCanvas();
 }
 
@@ -88,18 +109,20 @@ function redraw()
     context.strokeStyle = "#df4b26";
     context.lineJoin = "round";
     context.lineWidth = radius;
-    for(var i=0; i < clickX.length; i++)
-    {
-        context.beginPath();
-        if(clickDrag[i] && i){
-            context.moveTo(clickX[i-1], clickY[i-1]);
-        }else{
-            context.moveTo(clickX[i]-1, clickY[i]);
+    for(var j=0; j < arrayTrace.length; j++){
+        for(var i=0; i <  arrayTrace[j].clickX.length; i++)
+        {
+            context.beginPath();
+            if( arrayTrace[j].clickDrag[i] && i){
+                context.moveTo( arrayTrace[j].clickX[i-1],  arrayTrace[j].clickY[i-1]);
+            }else{
+                context.moveTo( arrayTrace[j].clickX[i]-1,  arrayTrace[j].clickY[i]);
+            }
+            context.lineTo( arrayTrace[j].clickX[i],  arrayTrace[j].clickY[i]);
+            context.closePath();
+            context.strokeStyle =  arrayTrace[j].clickColor[i];
+            context.stroke();
         }
-        context.lineTo(clickX[i], clickY[i]);
-        context.closePath();
-        context.strokeStyle = clickColor[i];
-        context.stroke();
     }
 }
 
@@ -107,13 +130,14 @@ function preparePeerJS(){
     if (peer == null) peer = new Peer({ key: 'lwjd5qra8257b9', debug: 3});
     peer.on('open', function(id){
         document.getElementById('pid').innerHTML= "Your id: "+ id;
+        arrayTrace[0].id=peer.id;
     });
     $(document).ready(function() {
         peer.on('connection', function(connection) {
             connection.on('data', function(data) {
                 var json = JSON.parse(data);
                 if(json.msg == 2){
-                    addClick2(json.x, json.y, json.dragging, json.color);
+                    addClick2(json.x, json.y, json.dragging, json.color,connection.peer);
                     redraw();
                 }
                 else if(json.msg == 0 ){
@@ -123,26 +147,21 @@ function preparePeerJS(){
                     addUser(json.id);
                 }
                 else if(json.msg ==3) {
-                    for(var i=0; i<json.x.length; i++){
-                        addClick2(json.x[i],json.y[i],json.dragging[i],json.color[i]);
-                        redraw();
-                    }
+                    addTrace(json.trace, connection.peer);
+                    redraw();
                 }
                 else if(json.msg==4){
                     confirmationSession(json.id);
                 }
                 else if(json.msg==5){
-                    var id=json.id;
-                    addUser(id);
-                    sendAllPoints(id);
-                    for( var i=0; i<listId.length-1; i++){
-                        if(id!=listId[i]){
-                            sendJson(peerTemp,JSON.stringify( {"msg":1, "id": id}), listId[i]);
-                            sendJson(peerTemp,JSON.stringify( {"msg":1, "id": listId[i]}),id);
-                        }
-                    }
+                    sendSessionInfo(json.id);
                 }
                 else if(json.msg==6) resetCanvas();
+                else if(json.msg==7) window.alert("The user "+json.id+" has rejected your request.");
+                else if(json.msg==8){
+                    window.alert("The user "+json.id+" has accepted your request.");
+                    clearSession();
+                }
             });
         });
     });
@@ -153,6 +172,7 @@ function confirmationId(id){
     if(conf == true){
         addUser(id);
         peerTemp=null;
+        sendJson(peerTemp, JSON.stringify( {"msg":8, "id": peer.id}), id);
         sendJson(peerTemp, JSON.stringify( {"msg":1, "id": peer.id}), id);
         for( var i=0; i<listId.length; i++){
             if(id!=listId[i]){
@@ -163,20 +183,25 @@ function confirmationId(id){
         sendAllPoints(id);
     }
     else{
-        console.log("Abend");
+        sendJson(peerTemp, JSON.stringify( {"msg":7, "id": peer.id}), id);
     }
 }
 
 function confirmationSession(id){
     var conf = confirm("Do you want to join to session of user: " + id + " ?");
     if(conf==true){
+        clearSession();
         addUser(id);
         peerTemp=null;
         sendJson(peerTemp,  JSON.stringify( {"msg":5, "id": peer.id}), id);
-        resetCanvas();
     }
 }
-
+function addTrace(trace,id){
+    var i=0;
+    do{i++;}
+    while(id!= arrayTrace[i].id)
+    arrayTrace[i]=trace;
+}
 function sendJson(peerCon, json, id){
     if(peerCon != null){
         peerCon.send(json);
@@ -187,6 +212,17 @@ function sendJson(peerCon, json, id){
             peerCon.send(json);
         });
     }
+}
+function sendSessionInfo(id){
+    addUser(id);
+    for( var i=0; i<listId.length; i++){
+        if(id!=listId[i]){
+            sendJson(peerTemp,JSON.stringify( {"msg":1, "id": id}), listId[i]);
+            sendJson(peerTemp,JSON.stringify( {"msg":1, "id": listId[i]}),id);
+        }
+    }
+    sendAllPoints(id);
+    window.alert("The user "+id+" joined to the session.");
 }
 
 function sendPoint(X,Y,dragging) {
@@ -204,9 +240,13 @@ function sendPoint(X,Y,dragging) {
 }
 
 function sendAllPoints(id){
-    var points = {"msg": 3, "x": clickX, "y": clickY, "dragging": clickDrag,"color": clickColor };
     peerTemp = null;
-    sendJson(peerTemp, JSON.stringify(points),id);
+    for(var i=0;i<arrayTrace.length;i++){
+        if(id!=arrayTrace[i].id){
+            var points = {"msg": 3, "trace": arrayTrace[i]};
+            sendJson(peerTemp, JSON.stringify(points),id);
+        }
+    }
 }
 
 function changeColor(){
@@ -217,6 +257,8 @@ function changeColor(){
 
 function addUser(id){
     listId.push(id);
+    var trace = new Trace(id);
+    arrayTrace.push(trace);
     peerTemp = peer.connect(listId[listId.length-1]);
     peerCon.push(peerTemp);
     var node = document.createElement("li");
@@ -231,7 +273,6 @@ function joinToOther(){
         if(idIsOnList(joinId)==false){
             peerTemp = null;
             sendJson( peerTemp, JSON.stringify({"msg" : 0, "id": peer.id}), document.getElementById("otherId").value);
-            resetCanvas();
         }
         else window.alert("You have already joined this session");
     }
