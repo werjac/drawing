@@ -1,4 +1,32 @@
-/**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: canvas.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: canvas.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
  * Tablica przechowująca podłączonych do sesji użytkowników.
  * @type {Array}
  */
@@ -99,7 +127,7 @@ function prepareSimpleCanvas()
     $('#clearCanvas').mousedown(function(e)
     {
         resetCanvas();
-        for(var i=0; i<listId.length;i++){
+        for(var i=0; i&lt;listId.length;i++){
             sendJson(peerCon[i],JSON.stringify({"msg":6}),listId[i]);
         }
     });
@@ -147,7 +175,7 @@ function clearCanvas()
  */
 function resetCanvas()
 {
-    for(var i=0; i<arrayTrace.length;i++){
+    for(var i=0; i&lt;arrayTrace.length;i++){
         arrayTrace[i].clickX=new Array();
         arrayTrace[i].clickY=new Array();
         arrayTrace[i].clickColor=new Array();
@@ -159,7 +187,7 @@ function resetCanvas()
  * Czyści sesję.
  */
 function clearSession(){
-    for(var i=1; i<arrayTrace.length;i++){
+    for(var i=1; i&lt;arrayTrace.length;i++){
         sendJson(peerTemp,JSON.stringify( {"msg":9, "id": peer.id}),arrayTrace[i].id);
         arrayTrace.pop();
     }
@@ -182,11 +210,11 @@ function redraw()
     context.strokeStyle = "#df4b26";
     context.lineJoin = "round";
     context.lineWidth = radius;
-    for(var j=0; j < arrayTrace.length; j++){
-        for(var i=0; i <  arrayTrace[j].clickX.length; i++)
+    for(var j=0; j &lt; arrayTrace.length; j++){
+        for(var i=0; i &lt;  arrayTrace[j].clickX.length; i++)
         {
             context.beginPath();
-            if( arrayTrace[j].clickDrag[i] && i){
+            if( arrayTrace[j].clickDrag[i] &amp;&amp; i){
                 context.moveTo( arrayTrace[j].clickX[i-1],  arrayTrace[j].clickY[i-1]);
             }else{
                 context.moveTo( arrayTrace[j].clickX[i]-1,  arrayTrace[j].clickY[i]);
@@ -263,7 +291,7 @@ function confirmationId(id){
         peerTemp=null;
         sendJson(peerTemp, JSON.stringify( {"msg":8, "id": peer.id}), id);
         sendJson(peerTemp, JSON.stringify( {"msg":1, "id": peer.id}), id);
-        for( var i=0; i<listId.length; i++){
+        for( var i=0; i&lt;listId.length; i++){
             if(id!=listId[i]){
                 sendJson(peerTemp,JSON.stringify( {"msg":1, "id": id}), listId[i]);
                 sendJson(peerTemp,JSON.stringify( {"msg":1, "id": listId[i]}),id);
@@ -342,7 +370,7 @@ function sendJson(peerCon, json, id){
 function sendSessionInfo(id){
     addUser(id);
 
-    for( var i=0; i<listId.length; i++){
+    for( var i=0; i&lt;listId.length; i++){
         if(id!=listId[i]){
             sendJson(peerTemp,JSON.stringify( {"msg":1, "id": id}), listId[i]);
             sendJson(peerTemp,JSON.stringify( {"msg":1, "id": listId[i]}),id);
@@ -358,7 +386,7 @@ function sendSessionInfo(id){
  * @param {Boolean} dragging alse oznacza początek nowej linii, true kontynuację.
  */
 function sendPoint(X,Y,dragging) {
-    for (i = 0; i < listId.length; i++) {
+    for (i = 0; i &lt; listId.length; i++) {
         if (peerCon[i] != null) {
             peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor}));
         }
@@ -376,7 +404,7 @@ function sendPoint(X,Y,dragging) {
  */
 function sendAllPoints(id){
     peerTemp = null;
-    for(var i=0;i<arrayTrace.length;i++){
+    for(var i=0;i&lt;arrayTrace.length;i++){
         if(id!=arrayTrace[i].id){
             var points = {"msg": 3, "trace": arrayTrace[i]};
             sendJson(peerTemp, JSON.stringify(points),id);
@@ -429,7 +457,7 @@ function joinToOther(){
  */
 function idIsOnList(id){
     if(id==peer.id) return true;
-    for(var i=0; i<listId.length;i++){
+    for(var i=0; i&lt;listId.length;i++){
         if (id == listId[i]) return true;
     }
     return false;
@@ -449,3 +477,26 @@ function addOtherUser(){
     else window.alert("The ID field cannot be empty.");
     document.getElementById("userId").value='';
 }
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Trace.html">Trace</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addClick">addClick</a></li><li><a href="global.html#addClick2">addClick2</a></li><li><a href="global.html#addOtherUser">addOtherUser</a></li><li><a href="global.html#addTrace">addTrace</a></li><li><a href="global.html#addUser">addUser</a></li><li><a href="global.html#arrayTrace">arrayTrace</a></li><li><a href="global.html#canvasHeight">canvasHeight</a></li><li><a href="global.html#canvasWidth">canvasWidth</a></li><li><a href="global.html#changeColor">changeColor</a></li><li><a href="global.html#clearCanvas">clearCanvas</a></li><li><a href="global.html#clearSession">clearSession</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#confirmationId">confirmationId</a></li><li><a href="global.html#confirmationSession">confirmationSession</a></li><li><a href="global.html#context">context</a></li><li><a href="global.html#currentColor">currentColor</a></li><li><a href="global.html#deleteUser">deleteUser</a></li><li><a href="global.html#idIsOnList">idIsOnList</a></li><li><a href="global.html#joinToOther">joinToOther</a></li><li><a href="global.html#listId">listId</a></li><li><a href="global.html#paint">paint</a></li><li><a href="global.html#peer">peer</a></li><li><a href="global.html#peerCon">peerCon</a></li><li><a href="global.html#peerTemp">peerTemp</a></li><li><a href="global.html#preparePeerJS">preparePeerJS</a></li><li><a href="global.html#prepareSimpleCanvas">prepareSimpleCanvas</a></li><li><a href="global.html#redraw">redraw</a></li><li><a href="global.html#resetCanvas">resetCanvas</a></li><li><a href="global.html#sendAllPoints">sendAllPoints</a></li><li><a href="global.html#sendJson">sendJson</a></li><li><a href="global.html#sendPoint">sendPoint</a></li><li><a href="global.html#sendSessionInfo">sendSessionInfo</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Mon Jun 12 2017 23:01:29 GMT+0200 (Środkowoeuropejski czas letni)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
