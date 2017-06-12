@@ -1,3 +1,7 @@
+/**
+ *@author
+ * Michał Wereszczak
+ */
 var listId = new Array();
 var peerCon= new Array();
 var arrayTrace = new Array();
@@ -9,7 +13,10 @@ var canvasWidth = 490;
 var canvasHeight = 220;
 var colors = ["#000000", "#ff0000", "#009933", "#0099ff", "#fffe11"];
 var currentColor = "#000000";
-
+/**
+ * Konstruktor klasy Trace, której obiekt przechowuje informacje o śladzie rysowania jednego użytkownika.
+ * @constructor
+ */
 function Trace(id){
     this.id=id;
     this.clickX = new Array();
@@ -93,6 +100,7 @@ function resetCanvas()
 }
 function clearSession(){
     for(var i=1; i<arrayTrace.length;i++){
+        sendJson(peerTemp,JSON.stringify( {"msg":9, "id": peer.id}),arrayTrace[i].id);
         arrayTrace.pop();
     }
     arrayTrace[0].clickX=new Array();
@@ -100,6 +108,9 @@ function clearSession(){
     arrayTrace[0].clickColor=new Array();
     arrayTrace[0].clickDrag=new Array();
     clearCanvas();
+    listId = new Array();
+    peerCon = new Array();
+    document.getElementById("listId").innerHTML="";
 }
 
 function redraw()
@@ -136,31 +147,31 @@ function preparePeerJS(){
         peer.on('connection', function(connection) {
             connection.on('data', function(data) {
                 var json = JSON.parse(data);
-                if(json.msg == 2){
-                    addClick2(json.x, json.y, json.dragging, json.color,connection.peer);
-                    redraw();
-                }
-                else if(json.msg == 0 ){
-                    confirmationId(json.id);
-                }
-                else if(json.msg == 1){
-                    addUser(json.id);
-                }
-                else if(json.msg ==3) {
-                    addTrace(json.trace, connection.peer);
-                    redraw();
-                }
-                else if(json.msg==4){
-                    confirmationSession(json.id);
-                }
-                else if(json.msg==5){
-                    sendSessionInfo(json.id);
-                }
-                else if(json.msg==6) resetCanvas();
-                else if(json.msg==7) window.alert("The user "+json.id+" has rejected your request.");
-                else if(json.msg==8){
-                    window.alert("The user "+json.id+" has accepted your request.");
-                    clearSession();
+                switch (json.msg){
+                    case 2: addClick2(json.x, json.y, json.dragging, json.color,connection.peer);
+                        redraw();
+                        break;
+                    case 0: confirmationId(json.id);
+                        break;
+                    case 1: addUser(json.id);
+                        break;
+                    case 3: addTrace(json.trace);
+                        redraw();
+                        break;
+                    case 4: confirmationSession(json.id);
+                        break;
+                    case 5: sendSessionInfo(json.id);
+                        break;
+                    case 6: resetCanvas();
+                        break;
+                    case 7: window.alert("The user "+json.id+" has rejected your request.");
+                        break;
+                    case 8: window.alert("The user "+json.id+" has accepted your request.");
+
+                        clearSession();
+                        break;
+                    case 9: deleteUser(json.id);
+                        break;
                 }
             });
         });
@@ -196,10 +207,25 @@ function confirmationSession(id){
         sendJson(peerTemp,  JSON.stringify( {"msg":5, "id": peer.id}), id);
     }
 }
-function addTrace(trace,id){
+function deleteUser(id){
+    var i = listId.indexOf(id);
+    if (i > -1) {
+        listId.splice(i, 1);
+    }
+    var node = document.getElementById("listId").childNodes[i];
+    document.getElementById("listId").removeChild(node);
+    i=0;
+    do{i++;}
+    while(id!= arrayTrace[i].id);
+    if (i > -1) {
+        arrayTrace.splice(i, 1);
+    }
+    redraw();
+}
+function addTrace(trace){
     var i=0;
     do{i++;}
-    while(id!= arrayTrace[i].id)
+    while(trace.id!= arrayTrace[i].id)
     arrayTrace[i]=trace;
 }
 function sendJson(peerCon, json, id){
@@ -215,6 +241,7 @@ function sendJson(peerCon, json, id){
 }
 function sendSessionInfo(id){
     addUser(id);
+
     for( var i=0; i<listId.length; i++){
         if(id!=listId[i]){
             sendJson(peerTemp,JSON.stringify( {"msg":1, "id": id}), listId[i]);
@@ -281,6 +308,7 @@ function joinToOther(){
 
 }
 function idIsOnList(id){
+    if(id==peer.id) return true;
     for(var i=0; i<listId.length;i++){
         if (id == listId[i]) return true;
     }
