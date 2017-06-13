@@ -160,7 +160,11 @@ function resetCanvas()
  */
 function clearSession(){
     for(var i=1; i<arrayTrace.length;i++){
+        peerTemp=null;
         sendJson(peerTemp,JSON.stringify( {"msg":9, "id": peer.id}),arrayTrace[i].id);
+    }
+    var tmp=arrayTrace.length;
+    for(var i=1; i<tmp;i++){
         arrayTrace.pop();
     }
     arrayTrace[0].clickX=new Array();
@@ -297,9 +301,15 @@ function deleteUser(id){
     var i = listId.indexOf(id);
     if (i > -1) {
         listId.splice(i, 1);
+        peerCon.splice(i, 1);
     }
-    var node = document.getElementById("listId").childNodes[i];
-    document.getElementById("listId").removeChild(node);
+    document.getElementById("listId").innerHTML="";
+    for(var i=0; i<listId.length;i++){
+        var node = document.createElement("li");
+        var textnode = document.createTextNode(listId[i]);
+        node.appendChild(textnode)
+        document.getElementById("listId").appendChild(node);
+    }
     i=0;
     do{i++;}
     while(id!= arrayTrace[i].id);
@@ -341,7 +351,7 @@ function sendJson(peerCon, json, id){
  */
 function sendSessionInfo(id){
     addUser(id);
-
+    peerTemp=null;
     for( var i=0; i<listId.length; i++){
         if(id!=listId[i]){
             sendJson(peerTemp,JSON.stringify( {"msg":1, "id": id}), listId[i]);
