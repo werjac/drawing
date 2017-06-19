@@ -176,6 +176,7 @@ function clearSession(){
     listId = new Array();
     peerCon = new Array();
     document.getElementById("listId").innerHTML="";
+    document.getElementById("listNr").innerHTML="";
 }
 /**
  * Rysuje wszystkie ślady.
