@@ -90,6 +90,7 @@ function Trace(id){
     this.clickY = new Array();
     this.clickDrag = new Array();
     this.clickColor = new Array();
+    this.nr = new Array();
 }
 /**
  * Przygotowuje canvas oraz obsługuje zdarzenia.
@@ -243,6 +244,7 @@ function redraw()
  * 8 - Zaakceptowano prośbę o dołączenie do sesji.
  * 9 - Informacja o tym, że należy usunąć użytkownika z sesji.
  * 10 - Użytkownik odrzucił zaproszenie do sesji.
+ * 11 - Nadejście potwierdzenia otrzymanoia wiadomości.
  */
 function preparePeerJS(){
     if (peer == null) peer = new Peer({ key: 'lwjd5qra8257b9', debug: 3});
@@ -256,6 +258,7 @@ function preparePeerJS(){
                 var json = JSON.parse(data);
                 switch (json.msg){
                     case 2: addClick2(json.x, json.y, json.dragging, json.color,connection.peer);
+                        sendConfirmationNr(connection.peer, json.nr);
                         redraw();
                         break;
                     case 0: confirmationId(json.id);
@@ -279,7 +282,11 @@ function preparePeerJS(){
                     case 9: deleteUser(json.id);
                         break;
                     case 10: window.alert("The user "+json.id+" has rejected your invitation.");
+                        break;
+                    case 11: receiveNr(json.id, json.nr);
+                        break;
                 }
+                updateNrList();
             });
         });
     });
@@ -322,7 +329,43 @@ function confirmationSession(id){
     else sendJson(peerTemp,  JSON.stringify( {"msg":10, "id": peer.id}), id);
 }
 /**
- * Usunięcie użytkownika i jego śladów z sesji.
+ * Wysłanie potwierdzenia otrzymania komunikatu.
+ * @param {String} id Identyfikator użytkownika.
+ * @param {Number} nr Numer wiadomości do potwierdzenia.
+ */
+function sendConfirmationNr(id,nr){
+    peerTemp=null;
+    sendJson(peerTemp,  JSON.stringify( {"msg":11, "id": peer.id, "nr":nr}), id);
+}
+/**
+ * Metoda wywoływana gdy przychodzi potwierdzenie dostarczenia, zdejmuje z tablicy numer wiadomości.
+ * @param {String}id Identyfikator użytkownika, od którego pochodzi wiadomość.
+ * @param {Number}nr Numer wiadomości.
+ */
+function receiveNr(id,nr){
+    var i=0,j=-1;
+    do{i++;}
+    while(id!= arrayTrace[i].id);
+    do{j++;}
+    while(nr!= arrayTrace[i].nr[j]);
+    if(j> -1){
+        arrayTrace[i].nr.splice(j,1);
+    }
+}
+/**
+ * Aktualizacja listy niepotwierdzonych wiadomości.
+ */
+function updateNrList(){
+    document.getElementById("listNr").innerHTML="";
+    for(var i=1; i&lt;arrayTrace.length;i++){
+        var node = document.createElement("li");
+        var textnode = document.createTextNode(arrayTrace[i].id + "-" + arrayTrace[i].nr.length);
+        node.appendChild(textnode);
+        document.getElementById("listNr").appendChild(node);
+    }
+}
+/**
+ * Usunięcie użytkownika i jego ślady z sesji.
  * @param {Number} id Identyfikator użytkownika.
  */
 function deleteUser(id){
@@ -335,7 +378,7 @@ function deleteUser(id){
     for(var i=0; i&lt;listId.length;i++){
         var node = document.createElement("li");
         var textnode = document.createTextNode(listId[i]);
-        node.appendChild(textnode)
+        node.appendChild(textnode);
         document.getElementById("listId").appendChild(node);
     }
     i=0;
@@ -393,17 +436,19 @@ function sendSessionInfo(id){
  * Wysłanie punktu do wszystkich użytkowników sesji.
  * @param {Number} X Współrzędna x.
  * @param {Number} Y Współrzędna y.
- * @param {Boolean} dragging alse oznacza początek nowej linii, true kontynuację.
+ * @param {Boolean} dragging false oznacza początek nowej linii, true kontynuację.
  */
 function sendPoint(X,Y,dragging) {
     for (i = 0; i &lt; listId.length; i++) {
+        var nr = Math.floor((Math.random() * 10000) + 1);
+        arrayTrace[i+1].nr.push(nr);
         if (peerCon[i] != null) {
-            peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor}));
+            peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor, "nr": nr }));
         }
         else {
             peerCon[i] = peer.connect(listId[i]);
             peerCon[i].on('open', function () {
-                peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor}));
+                peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor, "nr": nr }));
             });
         }
     }
@@ -416,6 +461,7 @@ function sendAllPoints(id){
     peerTemp = null;
     for(var i=0;i&lt;arrayTrace.length;i++){
         if(id!=arrayTrace[i].id){
+            arrayTrace[i].nr=new Array();
             var points = {"msg": 3, "trace": arrayTrace[i]};
             sendJson(peerTemp, JSON.stringify(points),id);
         }
@@ -497,13 +543,13 @@ function addOtherUser(){
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Trace.html">Trace</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addClick">addClick</a></li><li><a href="global.html#addClick2">addClick2</a></li><li><a href="global.html#addOtherUser">addOtherUser</a></li><li><a href="global.html#addTrace">addTrace</a></li><li><a href="global.html#addUser">addUser</a></li><li><a href="global.html#arrayTrace">arrayTrace</a></li><li><a href="global.html#canvasHeight">canvasHeight</a></li><li><a href="global.html#canvasWidth">canvasWidth</a></li><li><a href="global.html#changeColor">changeColor</a></li><li><a href="global.html#clearCanvas">clearCanvas</a></li><li><a href="global.html#clearSession">clearSession</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#confirmationId">confirmationId</a></li><li><a href="global.html#confirmationSession">confirmationSession</a></li><li><a href="global.html#context">context</a></li><li><a href="global.html#currentColor">currentColor</a></li><li><a href="global.html#deleteUser">deleteUser</a></li><li><a href="global.html#idIsOnList">idIsOnList</a></li><li><a href="global.html#joinToOther">joinToOther</a></li><li><a href="global.html#listId">listId</a></li><li><a href="global.html#paint">paint</a></li><li><a href="global.html#peer">peer</a></li><li><a href="global.html#peerCon">peerCon</a></li><li><a href="global.html#peerTemp">peerTemp</a></li><li><a href="global.html#preparePeerJS">preparePeerJS</a></li><li><a href="global.html#prepareSimpleCanvas">prepareSimpleCanvas</a></li><li><a href="global.html#redraw">redraw</a></li><li><a href="global.html#resetCanvas">resetCanvas</a></li><li><a href="global.html#sendAllPoints">sendAllPoints</a></li><li><a href="global.html#sendJson">sendJson</a></li><li><a href="global.html#sendPoint">sendPoint</a></li><li><a href="global.html#sendSessionInfo">sendSessionInfo</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Trace.html">Trace</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addClick">addClick</a></li><li><a href="global.html#addClick2">addClick2</a></li><li><a href="global.html#addOtherUser">addOtherUser</a></li><li><a href="global.html#addTrace">addTrace</a></li><li><a href="global.html#addUser">addUser</a></li><li><a href="global.html#arrayTrace">arrayTrace</a></li><li><a href="global.html#canvasHeight">canvasHeight</a></li><li><a href="global.html#canvasWidth">canvasWidth</a></li><li><a href="global.html#changeColor">changeColor</a></li><li><a href="global.html#clearCanvas">clearCanvas</a></li><li><a href="global.html#clearSession">clearSession</a></li><li><a href="global.html#colors">colors</a></li><li><a href="global.html#confirmationId">confirmationId</a></li><li><a href="global.html#confirmationSession">confirmationSession</a></li><li><a href="global.html#context">context</a></li><li><a href="global.html#currentColor">currentColor</a></li><li><a href="global.html#deleteUser">deleteUser</a></li><li><a href="global.html#idIsOnList">idIsOnList</a></li><li><a href="global.html#joinToOther">joinToOther</a></li><li><a href="global.html#listId">listId</a></li><li><a href="global.html#paint">paint</a></li><li><a href="global.html#peer">peer</a></li><li><a href="global.html#peerCon">peerCon</a></li><li><a href="global.html#peerTemp">peerTemp</a></li><li><a href="global.html#preparePeerJS">preparePeerJS</a></li><li><a href="global.html#prepareSimpleCanvas">prepareSimpleCanvas</a></li><li><a href="global.html#receiveNr">receiveNr</a></li><li><a href="global.html#redraw">redraw</a></li><li><a href="global.html#resetCanvas">resetCanvas</a></li><li><a href="global.html#sendAllPoints">sendAllPoints</a></li><li><a href="global.html#sendConfirmationNr">sendConfirmationNr</a></li><li><a href="global.html#sendJson">sendJson</a></li><li><a href="global.html#sendPoint">sendPoint</a></li><li><a href="global.html#sendSessionInfo">sendSessionInfo</a></li><li><a href="global.html#updateNrList">updateNrList</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Tue Jun 13 2017 09:44:24 GMT+0200 (Środkowoeuropejski czas letni)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.3</a> on Mon Jun 19 2017 11:19:15 GMT+0200 (Środkowoeuropejski czas letni)
 </footer>
 
 <script> prettyPrint(); </script>

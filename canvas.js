@@ -62,6 +62,7 @@ function Trace(id){
     this.clickY = new Array();
     this.clickDrag = new Array();
     this.clickColor = new Array();
+    this.nr = new Array();
 }
 /**
  * Przygotowuje canvas oraz obsługuje zdarzenia.
@@ -215,6 +216,7 @@ function redraw()
  * 8 - Zaakceptowano prośbę o dołączenie do sesji.
  * 9 - Informacja o tym, że należy usunąć użytkownika z sesji.
  * 10 - Użytkownik odrzucił zaproszenie do sesji.
+ * 11 - Nadejście potwierdzenia otrzymanoia wiadomości.
  */
 function preparePeerJS(){
     if (peer == null) peer = new Peer({ key: 'lwjd5qra8257b9', debug: 3});
@@ -228,6 +230,7 @@ function preparePeerJS(){
                 var json = JSON.parse(data);
                 switch (json.msg){
                     case 2: addClick2(json.x, json.y, json.dragging, json.color,connection.peer);
+                        sendConfirmationNr(connection.peer, json.nr);
                         redraw();
                         break;
                     case 0: confirmationId(json.id);
@@ -251,7 +254,11 @@ function preparePeerJS(){
                     case 9: deleteUser(json.id);
                         break;
                     case 10: window.alert("The user "+json.id+" has rejected your invitation.");
+                        break;
+                    case 11: receiveNr(json.id, json.nr);
+                        break;
                 }
+                updateNrList();
             });
         });
     });
@@ -294,7 +301,43 @@ function confirmationSession(id){
     else sendJson(peerTemp,  JSON.stringify( {"msg":10, "id": peer.id}), id);
 }
 /**
- * Usunięcie użytkownika i jego śladów z sesji.
+ * Wysłanie potwierdzenia otrzymania komunikatu.
+ * @param {String} id Identyfikator użytkownika.
+ * @param {Number} nr Numer wiadomości do potwierdzenia.
+ */
+function sendConfirmationNr(id,nr){
+    peerTemp=null;
+    sendJson(peerTemp,  JSON.stringify( {"msg":11, "id": peer.id, "nr":nr}), id);
+}
+/**
+ * Metoda wywoływana gdy przychodzi potwierdzenie dostarczenia, zdejmuje z tablicy numer wiadomości.
+ * @param {String}id Identyfikator użytkownika, od którego pochodzi wiadomość.
+ * @param {Number}nr Numer wiadomości.
+ */
+function receiveNr(id,nr){
+    var i=0,j=-1;
+    do{i++;}
+    while(id!= arrayTrace[i].id);
+    do{j++;}
+    while(nr!= arrayTrace[i].nr[j]);
+    if(j> -1){
+        arrayTrace[i].nr.splice(j,1);
+    }
+}
+/**
+ * Aktualizacja listy niepotwierdzonych wiadomości.
+ */
+function updateNrList(){
+    document.getElementById("listNr").innerHTML="";
+    for(var i=1; i<arrayTrace.length;i++){
+        var node = document.createElement("li");
+        var textnode = document.createTextNode(arrayTrace[i].id + "-" + arrayTrace[i].nr.length);
+        node.appendChild(textnode);
+        document.getElementById("listNr").appendChild(node);
+    }
+}
+/**
+ * Usunięcie użytkownika i jego ślady z sesji.
  * @param {Number} id Identyfikator użytkownika.
  */
 function deleteUser(id){
@@ -307,7 +350,7 @@ function deleteUser(id){
     for(var i=0; i<listId.length;i++){
         var node = document.createElement("li");
         var textnode = document.createTextNode(listId[i]);
-        node.appendChild(textnode)
+        node.appendChild(textnode);
         document.getElementById("listId").appendChild(node);
     }
     i=0;
@@ -365,17 +408,19 @@ function sendSessionInfo(id){
  * Wysłanie punktu do wszystkich użytkowników sesji.
  * @param {Number} X Współrzędna x.
  * @param {Number} Y Współrzędna y.
- * @param {Boolean} dragging alse oznacza początek nowej linii, true kontynuację.
+ * @param {Boolean} dragging false oznacza początek nowej linii, true kontynuację.
  */
 function sendPoint(X,Y,dragging) {
     for (i = 0; i < listId.length; i++) {
+        var nr = Math.floor((Math.random() * 10000) + 1);
+        arrayTrace[i+1].nr.push(nr);
         if (peerCon[i] != null) {
-            peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor}));
+            peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor, "nr": nr }));
         }
         else {
             peerCon[i] = peer.connect(listId[i]);
             peerCon[i].on('open', function () {
-                peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor}));
+                peerCon[i].send(JSON.stringify({"msg": 2, "x": X, "y": Y, "dragging": dragging, "color": currentColor, "nr": nr }));
             });
         }
     }
@@ -388,6 +433,7 @@ function sendAllPoints(id){
     peerTemp = null;
     for(var i=0;i<arrayTrace.length;i++){
         if(id!=arrayTrace[i].id){
+            arrayTrace[i].nr=new Array();
             var points = {"msg": 3, "trace": arrayTrace[i]};
             sendJson(peerTemp, JSON.stringify(points),id);
         }
