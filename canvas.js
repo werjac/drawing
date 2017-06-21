@@ -347,14 +347,17 @@ function retryMessage(){
                 sendJson(peerCon[i-1],arrayTrace[i].msg,arrayTrace[i].id)
                 console.log("Repeat number " + arrayTrace[i].repeatMsg[j] + ". ConfNumber = " + arrayTrace[i].nr[j]);
             }
-            else if(arrayTrace[i].repeatMsg[j] == 3){
-                for(var k=1; k<arrayTrace.length;k++){
-                    peerTemp=null;
-                    sendJson(peerTemp,JSON.stringify( {"msg":9, "id": peer.id}),arrayTrace[k].id);
-                    deleteUser(arrayTrace[i].id);
+            else {
+                if (arrayTrace[i].repeatMsg[j] == 3) {
+                    for (var k = 1; k < arrayTrace.length; k++) {
+                        peerTemp = null;
+                        sendJson(peerTemp, JSON.stringify({"msg": 9, "id": peer.id}), arrayTrace[k].id);
+                        window.alert("The user " + arrayTrace[i].id + " has been disconnected.");
+                        deleteUser(arrayTrace[i].id);
+                    }
                 }
-
             }
+
         }
     }
 }
